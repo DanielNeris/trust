@@ -1,6 +1,6 @@
 const test = require('node:test')
 const assert = require('node:assert')
-const { leaf, parent, root } = require('../lib/merkle')
+const { leaf, parent, root, proof, verify } = require('../lib/merkle')
 
 test('should hash a leaf as a 32-byte buffer', () => {
   assert.ok(Buffer.isBuffer(leaf('a')))
@@ -48,4 +48,44 @@ test('should change the root when the order changes', () => {
 test('should not give the same root to a list and that list with its last block repeated', () => {
   // the Bitcoin bug: duplicating the odd node made [a, b, c] and [a, b, c, c] share a root
   assert.notDeepStrictEqual(root(['a', 'b', 'c']), root(['a', 'b', 'c', 'c']))
+})
+
+const blocks = ['a', 'b', 'c', 'd', 'e']
+
+test('should prove every block of the log against the root', () => {
+  const r = root(blocks)
+  for (let i = 0; i < blocks.length; i++) assert.strictEqual(verify(blocks[i], proof(blocks, i), r), true, `block ${i}`)
+})
+
+test('should give only the siblings on the way up, with their side', () => {
+  const [h0, h1, h2, h3, h4] = blocks.map(leaf)
+  assert.deepStrictEqual(proof(blocks, 2), [
+    { hash: h3, left: false },
+    { hash: parent(h0, h1), left: true },
+    { hash: h4, left: false },
+  ])
+  assert.deepStrictEqual(proof(blocks, 4), [{ hash: parent(parent(h0, h1), parent(h2, h3)), left: true }]) // the odd one skips two levels
+})
+
+test('should not accept a changed block, a wrong position or a wrong root', () => {
+  const r = root(blocks)
+  const p = proof(blocks, 2)
+  assert.strictEqual(verify('x', p, r), false)
+  assert.strictEqual(verify('c', proof(blocks, 3), r), false)
+  assert.strictEqual(verify('c', p, root(['a', 'b', 'c'])), false)
+  const flipped = p.map(step => ({ ...step, left: !step.left })) // right hashes, wrong sides
+  assert.strictEqual(verify('c', flipped, r), false)
+})
+
+test('should have no proof for a position outside the log', () => {
+  assert.strictEqual(proof(blocks, -1), null)
+  assert.strictEqual(proof(blocks, 5), null)
+  assert.strictEqual(proof([], 0), null)
+})
+
+test('should return false on garbage instead of throwing', () => {
+  const r = root(blocks)
+  assert.strictEqual(verify('c', null, r), false)
+  assert.strictEqual(verify('c', [{ hash: 'not a buffer', left: true }], r), false)
+  assert.strictEqual(verify('c', proof(blocks, 2), null), false)
 })
