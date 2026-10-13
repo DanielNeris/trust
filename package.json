@@ -1,0 +1,23 @@
+{
+  "name": "trust",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "test": "node --test \"test/*.test.js\"",
+    "lint": "eslint .",
+    "format": "prettier --write ."
+  },
+  "author": "Daniel Neris",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.12.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.10"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
