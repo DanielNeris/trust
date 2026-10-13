@@ -1,6 +1,6 @@
 const test = require('node:test')
 const assert = require('node:assert')
-const { fork } = require('../lib/fork')
+const { fork, rewrote } = require('../lib/fork')
 const { Writer } = require('../lib/log')
 const { keyPair } = require('../lib/handshake')
 
@@ -51,5 +51,51 @@ test('should return false on garbage instead of throwing', () => {
     [forPeer1, { ...forPeer2, root: 'not a buffer' }],
   ]) {
     assert.strictEqual(fork(daniel.publicKey, a, b), false)
+  }
+})
+
+function log(keys, blocks) {
+  return { head: head(keys, blocks), blocks }
+}
+
+const before = log(daniel, ['a', 'b', 'c'])
+const grew = log(daniel, ['a', 'b', 'c', 'd', 'e'])
+const rewritten = log(daniel, ['a', 'X', 'c', 'd', 'e']) // block 1 changed, then two more added
+
+test('should catch the author rewriting the past while the log grows', () => {
+  assert.strictEqual(rewrote(daniel.publicKey, before.head, rewritten.head, rewritten.blocks), true)
+})
+
+test('should not call a log that only grew a rewrite', () => {
+  assert.strictEqual(rewrote(daniel.publicKey, before.head, grew.head, grew.blocks), false)
+})
+
+test('should not take blocks that are not the ones the new head signed', () => {
+  // the honest new head, but invented blocks: anyone could "prove" a rewrite this way
+  assert.strictEqual(rewrote(daniel.publicKey, before.head, grew.head, rewritten.blocks), false)
+})
+
+test('should only compare an older head with a longer one', () => {
+  assert.strictEqual(rewrote(daniel.publicKey, rewritten.head, before.head, before.blocks), false) // backwards
+  assert.strictEqual(rewrote(daniel.publicKey, grew.head, rewritten.head, rewritten.blocks), false) // same length: that's fork()
+})
+
+test('should not accept a rewrite built from someone else signatures', () => {
+  const fake = log(impostor, ['a', 'X', 'c', 'd', 'e'])
+  assert.strictEqual(rewrote(daniel.publicKey, before.head, fake.head, fake.blocks), false)
+  assert.strictEqual(
+    rewrote(daniel.publicKey, log(impostor, ['a', 'b', 'c']).head, rewritten.head, rewritten.blocks),
+    false,
+  )
+})
+
+test('should return false on garbage instead of throwing in rewrote', () => {
+  for (const args of [
+    [null, rewritten.head, rewritten.blocks],
+    [before.head, undefined, rewritten.blocks],
+    [before.head, rewritten.head, null],
+    [before.head, rewritten.head, []],
+  ]) {
+    assert.strictEqual(rewrote(daniel.publicKey, ...args), false)
   }
 })
