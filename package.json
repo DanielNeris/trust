@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
+    "sim": "node sim/grind.js",
     "test": "node --test \"test/*.test.js\"",
     "lint": "eslint .",
     "format": "prettier --write ."
