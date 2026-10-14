@@ -14,16 +14,7 @@
 //   node sim/grind.js 50     50 keys
 
 const crypto = require('node:crypto')
-const { distance, nodeId } = require('../lib/node')
-
-// How many zero bits at the start of the buffer.
-function leadingZeros(buf) {
-  for (let i = 0; i < buf.length; i++) {
-    const x = buf[i]
-    if (x !== 0) return i * 8 + Math.clz32(x) - 24 // clz32 counts in 32 bits, a byte is the last 8
-  }
-  return buf.length * 8 // all zero: the same id as the key
-}
+const { distance, nodeId, leadingZeros } = require('../lib/node')
 
 // Every port of one ip: the one whose id lands closest to target.
 function grind(ip, target) {

@@ -1,6 +1,6 @@
 const test = require('node:test')
 const assert = require('node:assert')
-const { nodeId, distance, Tokens } = require('../lib/node')
+const { nodeId, distance, leadingZeros, Tokens } = require('../lib/node')
 
 test('should derive the same 32-byte id from the same address, every time', () => {
   const id = nodeId('1.2.3.4', 49737)
@@ -28,6 +28,13 @@ test('should put an id that shares more leading bits closer', () => {
   const far = Buffer.alloc(32)
   far[0] = 0x01 // differs already in the first byte
   assert.ok(Buffer.compare(distance(target, near), distance(target, far)) < 0)
+})
+
+test('should count the leading bits two ids share', () => {
+  assert.strictEqual(leadingZeros(Buffer.from([0x80, 0])), 0)
+  assert.strictEqual(leadingZeros(Buffer.from([0x01, 0])), 7)
+  assert.strictEqual(leadingZeros(Buffer.from([0x00, 0x20])), 10)
+  assert.strictEqual(leadingZeros(Buffer.alloc(32)), 256) // the same id
 })
 
 test('should accept the token it gave to that host', () => {
