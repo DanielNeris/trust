@@ -1,10 +1,12 @@
 {
   "name": "trust",
   "version": "1.0.0",
-  "description": "",
+  "description": "How a P2P network trusts a peer, a block and a node without a blockchain: challenge-response, signed Merkle logs, fork proofs and address-derived DHT ids",
   "scripts": {
-    "sim": "node sim/grind.js",
     "test": "node --test \"test/*.test.js\"",
+    "coverage": "node --test --experimental-test-coverage --test-coverage-include=\"lib/**\" --test-coverage-lines=100 --test-coverage-branches=100 --test-coverage-functions=100 \"test/*.test.js\"",
+    "demo": "node example/demo.js",
+    "sim": "node sim/grind.js",
     "lint": "eslint .",
     "format": "prettier --write ."
   },
